@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Predictor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #070b56 0%, #0a0e70 50%, #ffd800 100%);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            max-width: 900px;
+            width: 100%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #ffd800;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #070b56;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #070b56;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-icon {
+            margin-left: 8px;
+            background-color: #070b56;
+            color: #ffd800;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+        }
+        .info-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            background: #333;
+            color: #fff;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            width: 200px;
+            z-index: 100;
+            top: 25px;
+            font-weight: normal;
+        }
+
+        form input, form select {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1.5px solid #ccc;
+            font-size: 15px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        form input:focus, form select:focus {
+            outline: none;
+            border-color: #070b56;
+            box-shadow: 0 0 5px rgba(7, 11, 86, 0.2);
+        }
+
+        .btn-container {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 2;
+            background-color: #070b56;
+            color: #ffd800;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.3s;
+        }
+        .btn-reset {
+            flex: 1;
+            background-color: #f1f1f1;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #0a0e70; transform: translateY(-2px); }
+        .btn-reset:hover { background-color: #e2e2e2; }
+
+        #loader {
+            display: none;
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #070b56;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .results-container {
+            grid-column: 1 / -1;
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            background-color: #f8f9fa;
+            border-left: 10px solid #070b56;
+        }
+        .prediction-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .model-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .risk-high { color: #dc3545; }
+        .risk-low { color: #28a745; }
+
+        .progress-bar {
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+            height: 24px;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .bg-high { background-color: #dc3545; }
+        .bg-low { background-color: #28a745; }
+
+        .error { color: #dc3545; font-size: 12px; margin-top: 5px; }
+
+        @media (max-width: 650px) {
+            form { grid-template-columns: 1fr; }
+            .prediction-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Heart Disease Predictor</h2>
+        </div>
+        
+        <form id="predictorForm" method="POST">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                    {% if field.name == 'resting_blood_pressure' %}
+                        <span class="info-icon" data-tooltip="Normal is 120/80 mmHg. High BP increases heart risk.">i</span>
+                    {% elif field.name == 'cholestoral' %}
+                        <span class="info-icon" data-tooltip="Serum cholesterol in mg/dl. High levels can clog arteries.">i</span>
+                    {% elif field.name == 'oldpeak' %}
+                        <span class="info-icon" data-tooltip="ST depression induced by exercise relative to rest.">i</span>
+                    {% endif %}
+                </label>
+                {{ field }}
+                {% if field.errors %}
+                    <span class="error">{{ field.errors|striptags }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div id="loader">
+                <div class="spinner"></div>
+                <p>Analyzing clinical data...</p>
+            </div>
+
+            <div class="btn-container" id="actionButtons">
+                <button type="submit">Analyze Health Data</button>
+                <a href="{% url 'home' %}" class="btn-reset">Reset Form</a>
+            </div>
+        </form>
+
+        {% if rf_prediction is not None %}
+        <div class="results-container">
+            <h3 style="text-align: center; margin-top: 0; color: #070b56;">Clinical Analysis Results</h3>
+            
+            <div class="prediction-grid">
+                <div class="model-card">
+                    <small>Model: Random Forest</small>
+                    <h4 class="{% if rf_prediction == 0 %}risk-high{% else %}risk-low{% endif %}">
+                        {% if rf_prediction == 0 %}HIGH RISK{% else %}LOW RISK{% endif %}
+                    </h4>
+                    <div class="progress-bar">
+                        <div class="progress-fill {% if rf_prediction == 0 %}bg-high{% else %}bg-low{% endif %}" 
+                             style="width: {{ rf_confidence }}%;">
+                            Confidence: {{ rf_confidence }}%
+                        </div>
+                    </div>
+                </div>
+
+                <div class="model-card">
+                    <small>Model: XGBoost</small>
+                    <h4 class="{% if xgb_prediction == 0 %}risk-high{% else %}risk-low{% endif %}">
+                        {% if xgb_prediction == 0 %}HIGH RISK{% else %}LOW RISK{% endif %}
+                    </h4>
+                    <div class="progress-bar">
+                        <div class="progress-fill {% if xgb_prediction == 0 %}bg-high{% else %}bg-low{% endif %}" 
+                             style="width: {{ xgb_confidence }}%;">
+                            Confidence: {{ xgb_confidence }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p style="font-size: 11px; color: #888; text-align: center; margin-top: 15px;">
+                The results provided by this tool are based on historical data patterns and machine learning predictions; they are for informational purposes only and do not constitute medical advice. You should visit a qualified doctor or healthcare professional for an accurate diagnosis and professional medical assessment.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const form = document.getElementById('predictorForm');
+        const loader = document.getElementById('loader');
+        const buttons = document.getElementById('actionButtons');
+
+        form.onsubmit = function() {
+            buttons.style.display = 'none';
+            loader.style.display = 'block';
+        };
+    </script>
+</body>
+</html>
+
